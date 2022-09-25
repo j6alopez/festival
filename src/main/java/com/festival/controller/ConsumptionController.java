@@ -1,13 +1,17 @@
 package com.festival.controller;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -63,37 +67,48 @@ public class ConsumptionController {
 		return json;
 	}	
 
-	@PostMapping(value = "/tracktime/{id}")
+	@PutMapping(value = "/{id}/status")
 	
-	public String setConsumption(@PathVariable Integer id, @RequestHeader(HttpHeaders.DATE) String headerDate) {
-		
+	public ResponseEntity<String> setConsumption(@PathVariable Integer id, @RequestHeader(HttpHeaders.DATE) String headerDate) {
+				
+
 		if (dispenserRepository.existsById(id)) {
 			
-			Dispenser dispenser = dispenserRepository.findById(id).get(); 
-			Consumption consumption;
-			
-			if (dispenser.isCurrent_opened()) { 
-
-				dispenser.setCurrent_opened(false);
-				consumption = consumptionRepository.consumptionOpened(id);
-				consumption.setTapInstantClosed(headerDate);
-				consumption.setEnded(true);
-
+			try {
+				Dispenser dispenser = dispenserRepository.findById(id).get(); 
+				Consumption consumption;
 				
-			}else {
-				consumption = new Consumption(id);			
-				dispenser.setCurrent_opened(true);
-				consumption.setTapInstantOpened(headerDate);			
+				if (dispenser.isCurrent_opened()) { 
+
+					dispenser.setCurrent_opened(false);
+					consumption = consumptionRepository.consumptionOpened(id);
+					consumption.setTapInstantClosed(headerDate);
+					consumption.setEnded(true);
+
+					
+				}else {
+					consumption = new Consumption(id);			
+					dispenser.setCurrent_opened(true);
+					consumption.setTapInstantOpened(headerDate);			
+				}
+				
+				dispenser = dispenserRepository.save(dispenser);
+				consumptionRepository.save(consumption);
+				
+				String json =ResponseHandler.generateResponseDispenserStatus(dispenser, Instant.now().toString());
+				return ResponseEntity.status(HttpStatus.ACCEPTED).body(json);
+				
+			} catch (Exception e) {
+				
+				String json = "Unexpected API error";
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected API error");
 			}
-			
-			dispenserRepository.save(dispenser);
-			consumptionRepository.save(consumption);
-			
-		}						
+		}
+		else {
 
-		return "TO BE MODIFIED";
+			String json = "Dispenser not created";
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(json);
+		}
 	}
-
-
 
 }

@@ -4,7 +4,7 @@ import javax.persistence.*;
 @Entity
 public class Dispenser {
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(name = "id")
 	private int id;
 	
@@ -15,10 +15,6 @@ public class Dispenser {
 	@Column(name = "flow_volume")
 	private float flow_volume;
 	
-	
-	public void setId(int id) {
-		this.id = id;
-	}
 	public Integer getId() {
 		return id;
 	}

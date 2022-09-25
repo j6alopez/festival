@@ -3,7 +3,11 @@ package com.festival.controller;
 import java.util.List;
 import com.festival.model.Dispenser;
 import com.festival.repository.IDispenserRepository;
+import com.festival.response.ResponseHandler;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,30 +35,20 @@ public class DispenserController {
 	}	
 	
 	@PostMapping	
-	public String createDispenser(@RequestBody Dispenser dispenser) {
+	public ResponseEntity<String> createDispenser(@RequestBody Dispenser dispenser) {
 		
-		boolean dispenserExists = dispenserRepository.existsById(dispenser.getId());
+		try {
+			dispenser = dispenserRepository.save(dispenser);
 
-		if (dispenserExists){
+			String json = ResponseHandler.generateResponseDispenserCreated(dispenser);
+			return ResponseEntity.status(HttpStatus.CREATED).body(json);
 			
-			return "object already exists";
+		}catch (Exception e) {
+			
+			String json = "Unexpected API error";
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(json);
+			
 		}
-		
-		dispenserRepository.save(dispenser);
-		
-		return dispenser.getId().toString();
-		
-	}
-	
-	@DeleteMapping(value = "/{id}")
-	
-	public String deleteDispenser(@PathVariable Integer id) {
-		
-		Dispenser dispenser = dispenserRepository.findById(id).get();
-		dispenserRepository.delete(dispenser);
-		
-		return "{ 'message' : deleted}";
-		
 	}
 	
 
