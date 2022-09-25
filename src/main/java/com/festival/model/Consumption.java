@@ -1,5 +1,9 @@
 package com.festival.model;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+
 import javax.persistence.*;
 
 @Entity
@@ -67,5 +71,12 @@ public class Consumption {
 
 	public void setEnded(boolean ended) {
 		this.ended = ended;
+	}
+	
+	public int getConsumedSeconds() {
+		
+		Duration timeConsumed = Duration.between(Instant.parse(tapInstantOpened),Instant.parse(tapInstantClosed));
+		return (int)timeConsumed.getSeconds();
+		
 	}
 }
