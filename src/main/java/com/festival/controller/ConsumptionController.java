@@ -32,39 +32,30 @@ public class ConsumptionController {
 	
 	@Autowired
 	private IDispenserRepository dispenserRepository;
-	@GetMapping(value = "/allTime")
+	@GetMapping(value = "/{id}/spending")
 	@ResponseBody
-	public String getAlltimes() {
+	public  ResponseEntity<String>  getSpendings(@PathVariable Integer id) {
 		
 		int totalComulativeConsumed=0;
-		List <Consumption> consumptionsList = consumptionRepository.findAll();
-		HashMap<Integer, Integer> consumptionsMap = new HashMap<Integer, Integer>();
 		
-		for (Dispenser dispenser : dispenserRepository.findAll()) {
+		try {
+			List <Consumption> consumptionsList = consumptionRepository.getDispenserConsumptions(id);
 			
-			consumptionsMap.put(dispenser.getId(), 0);
-		}
-		
-		for (Consumption consumption : consumptionsList) {
-			
-			totalComulativeConsumed += consumption.getConsumedSeconds();
-			
-			if (consumptionsMap.containsKey(consumption.getId())){
+			if (!dispenserRepository.existsById(id)) {
 				
-				int cumulativeConsumed = consumptionsMap.get(consumption.getId()) + consumption.getConsumedSeconds();
-				
-				consumptionsMap.put(consumption.getId(),cumulativeConsumed );
-				
-			}else {
-				
-				consumptionsMap.put(consumption.getId(),consumption.getConsumedSeconds());
-				
+				String json = "Requested dispenser does not exist";
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(json);
 			}
-					
-		}
+			
+			Dispenser dispenser = dispenserRepository.findById(id).get();
+			
 
-		String json =  ResponseHandler.generateResponseAllTimes(consumptionsMap);
-		return json;
+			String json =  ResponseHandler.generateResponseAllTimes(consumptionsList,dispenser);
+			return ResponseEntity.status(HttpStatus.OK).body(json);
+		} catch (Exception e) {
+			String json = "Unexpected API error";
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected API error");
+		}
 	}	
 
 	@PutMapping(value = "/{id}/status")
@@ -81,7 +72,7 @@ public class ConsumptionController {
 				if (dispenser.isCurrent_opened()) { 
 
 					dispenser.setCurrent_opened(false);
-					consumption = consumptionRepository.consumptionOpened(id);
+					consumption = consumptionRepository.getConsumptionOpened(id);
 					consumption.setTapInstantClosed(headerDate);
 					consumption.setEnded(true);
 

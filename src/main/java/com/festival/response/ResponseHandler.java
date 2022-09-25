@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,59 +13,52 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.festival.helper.StackTraceHelper;
+import com.festival.model.Consumption;
 import com.festival.model.Dispenser;
 import com.festival.model.FestivalPrice;
 
 public class ResponseHandler {
 	
-	public static String generateResponseAllTimes(HashMap<Integer, Integer> consumptionsMap) {
+	public static String generateResponseAllTimes(List <Consumption> consumptionsList, Dispenser dispenser) {
         	
-		Iterator <Entry<Integer,Integer>> iterator = consumptionsMap.entrySet().iterator();
 		int totalConsumedTime=0;
 		BigDecimal totalConsumedPrice = BigDecimal.ZERO;
 
 		ObjectMapper mapper = new ObjectMapper();
-        ArrayNode arrayNode = mapper.createArrayNode();	
-        ArrayNode arrayNodeTotal = mapper.createArrayNode();	        
+        ObjectNode mainNode  = mapper.createObjectNode();      
+        ArrayNode arrayUsagesNode = mapper.createArrayNode();		        
 		
         
         // each entry in map is a Json
         
-		while(iterator.hasNext()) {
+		for(Consumption consumption : consumptionsList ) {
 			
 			ObjectNode dispenserNode = mapper.createObjectNode();
-			Entry<Integer,Integer> entry = iterator.next();
 			
 			BigDecimal consumedPrice = BigDecimal.ZERO;
-			BigDecimal consumedTime  = BigDecimal.valueOf(entry.getValue());
+			BigDecimal consumedTime  = BigDecimal.valueOf(consumption.getConsumedSeconds());
 			
 			consumedPrice = consumedTime.multiply(FestivalPrice.getValue());
-			totalConsumedPrice = totalConsumedPrice.add(consumedPrice);
-			totalConsumedTime += entry.getValue();
+			totalConsumedPrice = totalConsumedPrice.add(consumedPrice);			
 			
+			dispenserNode.put("opened_at",consumption.getTapInstantOpened());
+			dispenserNode.put("closed_at",consumption.getTapInstantClosed());
+			dispenserNode.put("flow_volume",dispenser.getFlow_volume());
+			dispenserNode.put("total_spent",consumedPrice);
+			dispenserNode.put("currency",FestivalPrice.getCurrency());
 			
-			dispenserNode.put("dispenser_id",entry.getKey());
-			dispenserNode.put("time_consumed",consumedTime);
-			dispenserNode.put("price_value",consumedPrice);
-			dispenserNode.put("price_currency",FestivalPrice.getCurrency());
-			
-			arrayNode.add(dispenserNode);
+			arrayUsagesNode.add(dispenserNode);
 					
 		}
 		
-		ObjectNode totalNode = mapper.createObjectNode();
+		mainNode.put("amount", totalConsumedPrice);
+		mainNode.set("usages", arrayUsagesNode);
 		
-		totalNode.put("dispenser_id","all_dispensers");
-		totalNode.put("total_time_consumed",totalConsumedTime);
-		totalNode.put("price_value",totalConsumedPrice);
-		totalNode.put("price_currency",FestivalPrice.getCurrency());
-					
-		arrayNodeTotal.add(totalNode);
 		
 		try {
 			return mapper.writerWithDefaultPrettyPrinter()
 //						 .withRootName("data")
-						 .writeValueAsString(arrayNode);
+						 .writeValueAsString(mainNode);
 			
 		} catch (JsonProcessingException e) {
 
