@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.festival.helper.StackTraceHelper;
 import com.festival.model.Consumption;
 import com.festival.model.Dispenser;
 import com.festival.repository.IConsumptionRepository;
@@ -53,8 +54,8 @@ public class ConsumptionController {
 			String json =  ResponseHandler.generateResponseAllTimes(consumptionsList,dispenser);
 			return ResponseEntity.status(HttpStatus.OK).body(json);
 		} catch (Exception e) {
-			String json = "Unexpected API error";
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected API error");
+			String json = StackTraceHelper.stakTraceToString(e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(json);
 		}
 	}	
 
@@ -91,7 +92,7 @@ public class ConsumptionController {
 				
 			} catch (Exception e) {
 				
-				String json = "Unexpected API error";
+				String json = StackTraceHelper.stakTraceToString(e);
 				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected API error");
 			}
 		}
